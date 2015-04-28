@@ -121,10 +121,11 @@ public class FolderSettingsFragment extends PreferenceFragment
 
     @Override
     public void onApiChange(SyncthingService.State currentState) {
-        if (currentState != SyncthingService.State.ACTIVE) {
-            getActivity().finish();
+        SyncthingActivity activity = (SyncthingActivity) getActivity();
+        activity.handleLoadingDialog(currentState);
+
+        if (currentState != SyncthingService.State.ACTIVE)
             return;
-        }
 
         if (mIsCreate) {
             getActivity().setTitle(R.string.create_folder);
@@ -141,7 +142,7 @@ public class FolderSettingsFragment extends PreferenceFragment
             }
             if (folder == null) {
                 Log.w(TAG, "Folder not found in API update");
-                getActivity().finish();
+                activity.finish();
                 return;
             }
             mFolder = folder;
@@ -215,6 +216,7 @@ public class FolderSettingsFragment extends PreferenceFragment
                     return true;
                 }
                 mSyncthingService.getApi().editFolder(mFolder, true, getActivity());
+                mIsCreate = false;
                 return true;
             case R.id.delete:
                 new AlertDialog.Builder(getActivity())

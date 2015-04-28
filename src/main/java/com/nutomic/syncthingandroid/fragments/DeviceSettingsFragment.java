@@ -132,8 +132,11 @@ public class DeviceSettingsFragment extends PreferenceFragment implements
 
     @Override
     public void onApiChange(SyncthingService.State currentState) {
+        SyncthingActivity activity = (SyncthingActivity) getActivity();
+        activity.handleLoadingDialog(currentState);
+
         if (currentState != SyncthingService.State.ACTIVE) {
-            getActivity().finish();
+            activity.finish();
             return;
         }
 
@@ -152,7 +155,6 @@ public class DeviceSettingsFragment extends PreferenceFragment implements
             }
             if (device == null) {
                 Log.w(TAG, "Device not found in API update");
-                getActivity().finish();
                 return;
             }
             mDevice = device;
@@ -199,6 +201,7 @@ public class DeviceSettingsFragment extends PreferenceFragment implements
                     return true;
                 }
                 mSyncthingService.getApi().editDevice(mDevice, getActivity(), this);
+                mIsCreate = false;
                 return true;
             case R.id.share_device_id:
                 RestApi.shareDeviceId(getActivity(), mDevice.DeviceID);

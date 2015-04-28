@@ -11,8 +11,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -32,9 +30,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -342,15 +337,26 @@ public class RestApi implements SyncthingService.OnWebGuiAvailableListener,
     public void requireRestart(Activity activity) {
         new PostTask().execute(mUrl, PostTask.URI_CONFIG, mApiKey, mConfig.toString());
 
+        // Reload config and invoke {@link SyncthingService#onApiChange} so GUI stays persistent.
+        new GetTask() {
+            @Override
+            protected void onPostExecute(String config) {
+                try {
+                    mConfig = new JSONObject(config);
+                } catch (JSONException e) {
+                    Log.w(TAG, "Failed to parse config", e);
+                }
+                mOnApiAvailableListener.onApiAvailable();
+            }
+        }.execute(mUrl, GetTask.URI_CONFIG, mApiKey);
+
         if (mRestartPostponed)
             return;
 
         final Intent intent = new Intent(mContext, SyncthingService.class)
                 .setAction(SyncthingService.ACTION_RESTART);
 
-        AlertDialog.Builder builder = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-                ? new AlertDialog.Builder(activity, AlertDialog.THEME_HOLO_LIGHT)
-                : new AlertDialog.Builder(activity);
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setMessage(R.string.restart_title)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
